@@ -1,0 +1,17 @@
+.kMaYBahSBLOnErF7DLR2 {
+    z-index: -1;
+    background-image: linear-gradient(--invert-lightness(#0009) 0%, var(--background-base) 100%), var(--background-noise);
+    width: 100%;
+    height: 256px;
+    margin-top: 0;
+    transition-property: background;
+    transition-duration: 1s;
+    transition-timing-function: ease;
+    position: absolute
+}
+
+.kMaYBahSBLOnErF7DLR2.ERB9Yr1OyWiEbIozlRtA {
+    display: none
+}
+
+/*# sourceMappingURL=dwp-home-header.css.map*/
