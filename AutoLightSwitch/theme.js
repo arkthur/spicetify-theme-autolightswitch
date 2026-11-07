@@ -71,6 +71,7 @@
     { selector: ".bqVl6oP9CHC70vAFzqf3", ctx: [], set: [["background-color", "--invert-lightness(#000000b3)"]] },
     { selector: ".Y3i0QVby7QVDsOh2l0_m", ctx: [], set: [["background-color", "--invert-lightness(#00000080)"]] },
     { selector: ".ArpdzWdgRW_8lwpikPGW", ctx: [], set: [["box-shadow", "0 6px 10px --invert-lightness(#0009)"]] },
+    { selector: "@keyframes HMwEYfqJnNpFPPs0mEgw to", ctx: [], set: [["box-shadow", "0 6px 10px --invert-lightness(#0009)"]] },
     { selector: ".b2LKgxzAnfpFyHOk0oHI", ctx: [], set: [["background", "--invert-lightness(#202f72)"]] },
     { selector: ".l8RVrxnqg47P8Sq2lW7X", ctx: [], set: [["background-color", "--invert-lightness(#0000004d)"]] },
     { selector: ".e-10860-button-primary__inner", ctx: ["layer:encore"], set: [["background-color", invertUnlessSpice("--background-base"), "var(--background-base)"], ["color", invertUnlessSpice("--text-base"), "var(--text-base)"]] },
@@ -80,7 +81,7 @@
   // Nested rules added to a stock rule, for contextual overrides ("inside .X, invert"). A rule is only inserted
   // when the stock rule doesn't already contain one starting with the same selector.
   const NESTED = [
-    { selector: "a:not([data-encore-id])", ctx: [], rule: ".YKFf7aD7NQbSIyEGzTxe & { color: --invert-lightness(var(--spice-text)); }" },
+    { selector: "a:not([data-encore-id])", ctx: [], rule: "&.YKFf7aD7NQbSIyEGzTxe { color: --invert-lightness(var(--spice-text)); }" },
     { selector: ".encore-internal-color-text-base", ctx: ["layer:encore"], rule: ".RfCzM5zFPeG1MfeMLM4h & { color: --invert-lightness(var(--text-base)); }" },
   ];
   const nestedSelector = (rule) => rule.slice(0, rule.indexOf("{")).trim();
@@ -215,10 +216,25 @@
     return "group:" + rule.constructor.name + ":" + (rule.conditionText || rule.cssText.slice(0, 40));
   }
 
+  // Keyframes are addressed as "@keyframes <name> <keyText>", e.g. "@keyframes abc to". Chrome reports
+  // from/to as 0%/100%, so those are mapped back.
+  const keyText = (text) => ({ "0%": "from", "100%": "to" })[text] || text;
+  function patchKeyframes(rule, ctx) {
+    const here = ctxKey(ctx);
+    for (const frame of rule.cssRules) {
+      const key = normSelector(`@keyframes ${rule.name} ${keyText(frame.keyText)}`);
+      for (const patch of bySelector.get(key) || []) {
+        if (ctxKey(patch.ctx) === here) patchDeclarations(frame, patch);
+      }
+    }
+  }
+
   function walk(rules, ctx) {
     for (const rule of rules) {
       if (rule instanceof CSSStyleRule) {
         patchStyleRule(rule, ctx);
+      } else if (rule instanceof CSSKeyframesRule) {
+        patchKeyframes(rule, ctx);
       } else if (rule.cssRules) {
         walk(rule.cssRules, ctx.concat(contextOf(rule)));
       }

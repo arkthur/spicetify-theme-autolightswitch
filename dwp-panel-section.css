@@ -2978,7 +2978,7 @@ __workaround_element__ {
 
     to {
         background-color: var(--background-base);
-        box-shadow: 0 6px 10px #0009
+        box-shadow: 0 6px 10px --invert-lightness(#0009)
     }
 }
 
