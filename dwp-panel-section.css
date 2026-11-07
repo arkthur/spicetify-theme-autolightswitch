@@ -3620,6 +3620,7 @@ __workaround_element__ {
 
 .brj33i1oc6TNRxTWt7vy {
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     overflow-wrap: anywhere;
     -webkit-box-orient: vertical;
     display: -webkit-box;
@@ -3636,6 +3637,7 @@ __workaround_element__ {
 
 .Sc408Qk_HwDuPBb4Hy0M {
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     overflow-wrap: anywhere;
     text-align: start;
     text-overflow: ellipsis;
@@ -5723,6 +5725,7 @@ html:not(.no-focus-outline) .T4uIfl8EOhafECyZd6TH:focus-visible {
 
 .Iby5z_BZ3sH8cOLbLtuP {
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     display: -webkit-box;
     overflow: hidden

@@ -450,7 +450,7 @@
 .Yqfut8Aw1vohHPWNRsWy>:first-child>.kOAVq_5h2_KhR2SmJfaj {
     padding-inline-end:calc(2 * var(--columnSize) + 2 * var(--gap))}
 
-.Yqfut8Aw1vohHPWNRsWy>: nth-child(2) {
+.Yqfut8Aw1vohHPWNRsWy>:nth-child(2) {
     grid-area:addedAt
 }
 
@@ -628,7 +628,7 @@
 }
 
 .b2LKgxzAnfpFyHOk0oHI {
-    background: #202f72;
+    background: --invert-lightness(#202f72);
     border-radius: 4px;
     justify-content: center;
     align-items: center;

@@ -154,6 +154,7 @@ __workaround_element__ {
 
 .playlist-playlist-playlistDescription {
     -webkit-line-clamp: 1;
+    line-clamp: 1;
     word-break: break-word;
     -webkit-box-orient: vertical;
     max-height: 74px;
@@ -163,12 +164,14 @@ __workaround_element__ {
 
 .playlist-playlist-playlistDescription.playlist-playlist-optimizedHeaderDescription {
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     display: -webkit-box
 }
 
 [data-entity-header-width-breakpoint=MEDIUM] .playlist-playlist-playlistDescription.playlist-playlist-optimizedHeaderDescription {
     -webkit-line-clamp: 1;
+    line-clamp: 1;
     -webkit-box-orient: vertical;
     display: -webkit-box
 }
@@ -377,7 +380,7 @@ __workaround_element__ {
 }
 
 @media (color<8) {
-    .playlist-playlist-mixingBackground: after {
+    .playlist-playlist-mixingBackground:after {
         --radial-color-from:#0000 10%;
         --radial-color-to: var(--spice-main) 100%;
         --dither: var(--background-noise)
@@ -390,7 +393,7 @@ __workaround_element__ {
 @media (color<8) {
 }
 
-.playlist-playlist-mixingBackground.playlist-playlist-mixingBackgroundVisible: after {
+.playlist-playlist-mixingBackground.playlist-playlist-mixingBackgroundVisible:after {
     opacity:1
 }
 

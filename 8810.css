@@ -566,7 +566,7 @@ html .Wz_L2iaVHFFzL6Y9cLXw {
     --shelf-fixed-max-width: var(--shelf-fixed-width);
     --shelf-fixed-min-height: var(--shelf-fixed-height);
     --shelf-fixed-max-height: var(--shelf-fixed-height);
-    --carousel-start-chevron-gradient--invert-lightness(#121212b3);
+    --carousel-start-chevron-gradient: --invert-lightness(#121212b3);
     --carousel-end-chevron-gradient: --invert-lightness(#121212b3);
     padding-inline:40px}
 

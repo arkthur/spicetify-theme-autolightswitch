@@ -457,7 +457,7 @@ __workaround_element__ {
     --optimized-entity-header-padding-block-end: 16px;
     padding-block:var(--optimized-entity-header-padding-block-start) var(--optimized-entity-header-padding-block-end)}
 
-.main-entityHeader-container.main-entityHeader-newEntityHeader.main-entityHeader-standardHeight: not(.main-entityHeader-contentFullBleed) .main-entityHeader-contentWrapper {
+.main-entityHeader-container.main-entityHeader-newEntityHeader.main-entityHeader-standardHeight:not(.main-entityHeader-contentFullBleed) .main-entityHeader-contentWrapper {
     min-width:0;
     padding-inline:16px}
 
@@ -480,7 +480,7 @@ __workaround_element__ {
     .main-entityHeader-container.main-entityHeader-newEntityHeader.main-entityHeader-standardHeight:not(.main-entityHeader-contentFullBleed) .main-entityHeader-contentWrapper {
         padding-inline:var(--content-spacing) 64px}
 
-    .main-entityHeader-container.main-entityHeader-newEntityHeader.main-entityHeader-standardHeight: not(.main-entityHeader-contentFullBleed) .main-entityHeader-imageContainerNew {
+    .main-entityHeader-container.main-entityHeader-newEntityHeader.main-entityHeader-standardHeight:not(.main-entityHeader-contentFullBleed) .main-entityHeader-imageContainerNew {
         margin-inline-end:var(--content-spacing)
     }
 
@@ -515,7 +515,7 @@ __workaround_element__ {
     justify-content: center;
     padding-block-start:var(--content-spacing)}
 
-.main-entityHeader-container.main-entityHeader-newEntityHeader.main-entityHeader-standardHeight.main-entityHeader-shortHeight: not(.main-entityHeader-contentFullBleed) .main-entityHeader-headerText {
+.main-entityHeader-container.main-entityHeader-newEntityHeader.main-entityHeader-standardHeight.main-entityHeader-shortHeight:not(.main-entityHeader-contentFullBleed) .main-entityHeader-headerText {
     justify-content:flex-end;
     padding-block-start:0}
 
@@ -544,6 +544,7 @@ __workaround_element__ {
 
 .main-entityHeader-title {
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     word-break: break-word;
     text-align: start;
     -webkit-box-orient: vertical;
@@ -557,6 +558,7 @@ __workaround_element__ {
 
 .main-entityHeader-titleInner {
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     display: -webkit-box
 }

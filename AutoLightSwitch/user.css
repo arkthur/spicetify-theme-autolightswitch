@@ -1,0 +1,126 @@
+/*
+ * AutoLightSwitch - Spicetify theme.
+ *
+ * Turns Spotify's dark UI into a light one by flipping the lightness of colors
+ * with the native CSS @function --invert-lightness (needs Chromium 139+).
+ * The inversion is driven by --alsw-invert (1 = light/inverted, 0 = stock dark):
+ *   - theme.js sets html.alsw-light / html.alsw-dark from the Windows app theme,
+ *     which SystemThemeWatcher.exe writes to system-theme.txt (Spotify's
+ *     embedded Chromium always reports prefers-color-scheme: dark, so the media
+ *     query alone can never follow the OS).
+ *   - Without the watcher, the prefers-color-scheme media query below is used.
+ *
+ * This file only defines the functions and the --spice-* palette, rebuilt from
+ * the --spice-*-original colors below (keep them in sync with color.ini).
+ * The hard-coded colors Spicetify can't remap (scrims, shadows, Encore tokens
+ * such as --background-base) are wrapped in --invert-lightness() by theme.js,
+ * which edits Spotify's own CSS rules in place, like a DevTools edit.
+ */
+
+/* 1 = inverted (light), 0 = Spotify's original dark colors; values in between blend. */
+:root {
+    --alsw-invert: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --alsw-invert: 0;
+    }
+}
+
+:root.alsw-light {
+    --alsw-invert: 1;
+}
+
+:root.alsw-dark {
+    --alsw-invert: 0;
+}
+
+/* Flips HSL lightness (L -> 100 - L), scaled by --alsw-invert. Native CSS @function: needs Chromium 139+. */
+@function --invert-lightness(--color <color>) returns <color> {
+    result: oklch(from var(--color) calc(l + var(--alsw-invert, 1) * (pow(1 - pow(l, 1.6), calc(1 / 1.6)) - l)) c h);
+}
+
+/* Same inversion for an "R,G,B" triplet: c' = 255 - max - min + c (equals an HSL L flip), scaled by --alsw-invert. */
+@function --invert-lightness-rgb(--r <number>, --g <number>, --b <number>) returns <number># {
+    --sum: calc((255 - max(var(--r), var(--g), var(--b)) - min(var(--r), var(--g), var(--b))) * var(--alsw-invert, 1));
+    result: calc(var(--sum) + var(--r)), calc(var(--sum) + var(--g)), calc(var(--sum) + var(--b));
+}
+
+:root {
+    --spice-button-disabled-original: #535353;
+    --spice-button-active-original: #1ed760;
+    --spice-subtext-original: #b3b3b3;
+    --spice-highlight-elevated-original: #2a2a2a;
+    --spice-main-elevated-original: #242424;
+    --spice-shadow-original: #000000;
+    --spice-main-original: #121212;
+    --spice-tab-active-original: #333333;
+    --spice-button-original: #1db954;
+    --spice-text-original: #ffffff;
+    --spice-card-original: #282828;
+    --spice-notification-error-original: #e22134;
+    --spice-misc-original: #7f7f7f;
+    --spice-notification-original: #4687d6;
+    --spice-selected-row-original: #ffffff;
+    --spice-player-original: #181818;
+    --spice-highlight-original: #1a1a1a;
+    --spice-sidebar-original: #000000;
+
+    --spice-rgb-button-disabled-original: 83,83,83;
+    --spice-rgb-button-active-original: 30,215,96;
+    --spice-rgb-subtext-original: 179,179,179;
+    --spice-rgb-highlight-elevated-original: 42,42,42;
+    --spice-rgb-main-elevated-original: 36,36,36;
+    --spice-rgb-shadow-original: 0,0,0;
+    --spice-rgb-main-original: 18,18,18;
+    --spice-rgb-tab-active-original: 51,51,51;
+    --spice-rgb-button-original: 29,185,84;
+    --spice-rgb-text-original: 255,255,255;
+    --spice-rgb-card-original: 40,40,40;
+    --spice-rgb-notification-error-original: 226,33,52;
+    --spice-rgb-misc-original: 127,127,127;
+    --spice-rgb-notification-original: 70,135,214;
+    --spice-rgb-selected-row-original: 255,255,255;
+    --spice-rgb-player-original: 24,24,24;
+    --spice-rgb-highlight-original: 26,26,26;
+    --spice-rgb-sidebar-original: 0,0,0;
+
+    --spice-button-disabled: --invert-lightness(var(--spice-button-disabled-original));
+    --spice-button-active: --invert-lightness(var(--spice-button-active-original));
+    --spice-subtext: --invert-lightness(var(--spice-subtext-original));
+    --spice-highlight-elevated: --invert-lightness(var(--spice-highlight-elevated-original));
+    --spice-main-elevated: --invert-lightness(var(--spice-main-elevated-original));
+    --spice-shadow: --invert-lightness(var(--spice-shadow-original));
+    --spice-main: --invert-lightness(var(--spice-main-original));
+    --spice-tab-active: --invert-lightness(var(--spice-tab-active-original));
+    --spice-button: --invert-lightness(var(--spice-button-original));
+    --spice-text: --invert-lightness(var(--spice-text-original));
+    --spice-card: --invert-lightness(var(--spice-card-original));
+    --spice-notification-error: --invert-lightness(var(--spice-notification-error-original));
+    --spice-misc: --invert-lightness(var(--spice-misc-original));
+    --spice-notification: --invert-lightness(var(--spice-notification-original));
+    --spice-selected-row: --invert-lightness(var(--spice-selected-row-original));
+    --spice-player: --invert-lightness(var(--spice-player-original));
+    --spice-highlight: --invert-lightness(var(--spice-highlight-original));
+    --spice-sidebar: --invert-lightness(var(--spice-sidebar-original));
+
+    --spice-rgb-button-disabled: --invert-lightness-rgb(83, 83, 83);
+    --spice-rgb-button-active: --invert-lightness-rgb(30, 215, 96);
+    --spice-rgb-subtext: --invert-lightness-rgb(179, 179, 179);
+    --spice-rgb-highlight-elevated: --invert-lightness-rgb(42, 42, 42);
+    --spice-rgb-main-elevated: --invert-lightness-rgb(36, 36, 36);
+    --spice-rgb-shadow: --invert-lightness-rgb(0, 0, 0);
+    --spice-rgb-main: --invert-lightness-rgb(18, 18, 18);
+    --spice-rgb-tab-active: --invert-lightness-rgb(51, 51, 51);
+    --spice-rgb-button: --invert-lightness-rgb(29, 185, 84);
+    --spice-rgb-text: --invert-lightness-rgb(255, 255, 255);
+    --spice-rgb-card: --invert-lightness-rgb(40, 40, 40);
+    --spice-rgb-notification-error: --invert-lightness-rgb(226, 33, 52);
+    --spice-rgb-misc: --invert-lightness-rgb(127, 127, 127);
+    --spice-rgb-notification: --invert-lightness-rgb(70, 135, 214);
+    --spice-rgb-selected-row: --invert-lightness-rgb(255, 255, 255);
+    --spice-rgb-player: --invert-lightness-rgb(24, 24, 24);
+    --spice-rgb-highlight: --invert-lightness-rgb(26, 26, 26);
+    --spice-rgb-sidebar: --invert-lightness-rgb(0, 0, 0);
+}
