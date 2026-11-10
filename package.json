@@ -1,0 +1,39 @@
+{
+  "name": "auto-light-switch",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint --flag unstable_native_nodejs_ts_config .",
+    "lint:fix": "eslint --fix --flag unstable_native_nodejs_ts_config ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.18.0",
+      "onFail": "download"
+    }
+  },
+  "packageManager": "pnpm@12.18.0",
+  "type": "module",
+  "devDependencies": {
+    "@eslint/config-helpers": "^0.7.0",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.6",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-import-x": "^4.18.1",
+    "eslint-typegen": "^2.3.2",
+    "globals": "^17.14.0",
+    "postcss": "^8.5.32",
+    "prettier": "^3.9.10",
+    "stylelint": "^18.0.0",
+    "stylelint-config-standard": "^41.0.0",
+    "typescript": "^6",
+    "typescript-eslint": "^8.72.1"
+  }
+}

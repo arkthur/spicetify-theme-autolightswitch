@@ -1,0 +1,8 @@
+{
+  "eslint.options": {
+    "flags": ["unstable_native_nodejs_ts_config"]
+  },
+  // VS Code's built-in CSS validator doesn't know @function/@mixin; Stylelint
+  // (stylelint-config-experimental) validates unknown at-rules instead.
+  "css.lint.unknownAtRules": "ignore"
+}
