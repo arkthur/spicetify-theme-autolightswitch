@@ -1,3 +1,5 @@
+/* stylelint-disable selector-class-pattern */
+
 /*
  * AutoLightSwitch - Spicetify theme.
  *
@@ -17,110 +19,347 @@
  * which edits Spotify's own CSS rules in place, like a DevTools edit.
  */
 
-/* 1 = inverted (light), 0 = Spotify's original dark colors; values in between blend. */
-:root {
-    --alsw-invert: 1;
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --alsw-invert: 0;
-    }
-}
-
-:root.alsw-light {
-    --alsw-invert: 1;
-}
-
-:root.alsw-dark {
-    --alsw-invert: 0;
-}
-
 /* Flips HSL lightness (L -> 100 - L), scaled by --alsw-invert. Native CSS @function: needs Chromium 139+. */
 @function --invert-lightness(--color <color>) returns <color> {
-    result: oklch(from var(--color) calc(l + var(--alsw-invert, 1) * (pow(1 - pow(l, 1.6), calc(1 / 1.6)) - l)) c h);
+  result: oklch(
+    from var(--color)
+      calc(
+        l + var(--alsw-invert, 1) * (pow(1 - pow(l, 1.6), calc(1 / 1.6)) - l)
+      )
+      c h
+  );
 }
 
 /* Same inversion for an "R,G,B" triplet: c' = 255 - max - min + c (equals an HSL L flip), scaled by --alsw-invert. */
-@function --invert-lightness-rgb(--r <number>, --g <number>, --b <number>) returns <number># {
-    --sum: calc((255 - max(var(--r), var(--g), var(--b)) - min(var(--r), var(--g), var(--b))) * var(--alsw-invert, 1));
-    result: calc(var(--sum) + var(--r)), calc(var(--sum) + var(--g)), calc(var(--sum) + var(--b));
+@function --invert-lightness-rgb(--r <number>, --g <number>, --b <number>)
+  returns <number># {
+  --sum: calc(
+    (
+        255 - max(var(--r), var(--g), var(--b)) -
+          min(var(--r), var(--g), var(--b))
+      ) *
+      var(--alsw-invert, 1)
+  );
+
+  result:
+    calc(var(--sum) + var(--r)), calc(var(--sum) + var(--g)),
+    calc(var(--sum) + var(--b));
 }
 
+/* --alsw-invert: 1 = inverted (light), 0 = Spotify's original dark colors; values in between blend. */
+
+/*
+ * Spotify draws the menu button ("…") and the window controls natively, on top of the page, so their colors can't
+ * be changed from here (the only things the page can do are set the title bar height and show/hide them). The
+ * glyphs are always white, and the window controls sit on a layer that is black at 53% (white at 25% under the
+ * hovered button), so on a light page they fade out. A gray outline is painted precisely behind each glyph, in the
+ * empty boxes Spotify reserves for them (sized in native pixels, hence the zoom division): a stroke of
+ * --alsw-native-border-width centered on each glyph line, and discs of 1.2 x that radius for the menu dots. It
+ * fades out with --alsw-invert, which gives back the stock look in dark mode.
+ * theme.js adds .alsw-native-buttons-hidden while Spotify hides the native buttons (fullscreen, cinema mode) and
+ * .alsw-maximized while the window is maximized (the maximize glyph becomes the restore glyph).
+ *
+ * The shapes are the pixel positions of the glyphs Windows draws at 100% scale, relative to the reserved 135px
+ * box, as masks of the outline color made of gradient layers (an SVG mask is a separate document and couldn't use
+ * the variable): minimize at x 18-28, maximize/restore at x 62-72, close at x 107-117, rows
+ * 27-37 of the 64px title bar; the menu dots are 4px discs centered at x 7.32, 16 and 24.68, y 8 of the 28 x 16 box.
+ */
 :root {
-    --spice-button-disabled-original: #535353;
-    --spice-button-active-original: #1ed760;
-    --spice-subtext-original: #b3b3b3;
-    --spice-highlight-elevated-original: #2a2a2a;
-    --spice-main-elevated-original: #242424;
-    --spice-shadow-original: #000000;
-    --spice-main-original: #121212;
-    --spice-tab-active-original: #333333;
-    --spice-button-original: #1db954;
-    --spice-text-original: #ffffff;
-    --spice-card-original: #282828;
-    --spice-notification-error-original: #e22134;
-    --spice-misc-original: #7f7f7f;
-    --spice-notification-original: #4687d6;
-    --spice-selected-row-original: #ffffff;
-    --spice-player-original: #181818;
-    --spice-highlight-original: #1a1a1a;
-    --spice-sidebar-original: #000000;
+  --alsw-invert: 1;
+  --alsw-native-outline: color-mix(
+    in srgb,
+    black calc(var(--alsw-invert, 1) * 50%),
+    transparent
+  );
+  --alsw-native-scale: calc(var(--zoom-level, 100) / 100);
 
-    --spice-rgb-button-disabled-original: 83,83,83;
-    --spice-rgb-button-active-original: 30,215,96;
-    --spice-rgb-subtext-original: 179,179,179;
-    --spice-rgb-highlight-elevated-original: 42,42,42;
-    --spice-rgb-main-elevated-original: 36,36,36;
-    --spice-rgb-shadow-original: 0,0,0;
-    --spice-rgb-main-original: 18,18,18;
-    --spice-rgb-tab-active-original: 51,51,51;
-    --spice-rgb-button-original: 29,185,84;
-    --spice-rgb-text-original: 255,255,255;
-    --spice-rgb-card-original: 40,40,40;
-    --spice-rgb-notification-error-original: 226,33,52;
-    --spice-rgb-misc-original: 127,127,127;
-    --spice-rgb-notification-original: 70,135,214;
-    --spice-rgb-selected-row-original: 255,255,255;
-    --spice-rgb-player-original: 24,24,24;
-    --spice-rgb-highlight-original: 26,26,26;
-    --spice-rgb-sidebar-original: 0,0,0;
+  /* Width of the outline strokes behind the native menu and window buttons; the menu dots use 1.2 x this radius. */
+  --alsw-native-border-width: 3px;
+  --spice-button-disabled-original: #535353;
+  --spice-button-active-original: #1ed760;
+  --spice-subtext-original: #b3b3b3;
+  --spice-highlight-elevated-original: #2a2a2a;
+  --spice-main-elevated-original: #242424;
+  --spice-shadow-original: #000;
+  --spice-main-original: #121212;
+  --spice-tab-active-original: #333;
+  --spice-button-original: #1db954;
+  --spice-text-original: #fff;
+  --spice-card-original: #282828;
+  --spice-notification-error-original: #e22134;
+  --spice-misc-original: #7f7f7f;
+  --spice-notification-original: #4687d6;
+  --spice-selected-row-original: #fff;
+  --spice-player-original: #181818;
+  --spice-highlight-original: #1a1a1a;
+  --spice-sidebar-original: #000;
+  --spice-rgb-button-disabled-original: 83, 83, 83;
+  --spice-rgb-button-active-original: 30, 215, 96;
+  --spice-rgb-subtext-original: 179, 179, 179;
+  --spice-rgb-highlight-elevated-original: 42, 42, 42;
+  --spice-rgb-main-elevated-original: 36, 36, 36;
+  --spice-rgb-shadow-original: 0, 0, 0;
+  --spice-rgb-main-original: 18, 18, 18;
+  --spice-rgb-tab-active-original: 51, 51, 51;
+  --spice-rgb-button-original: 29, 185, 84;
+  --spice-rgb-text-original: 255, 255, 255;
+  --spice-rgb-card-original: 40, 40, 40;
+  --spice-rgb-notification-error-original: 226, 33, 52;
+  --spice-rgb-misc-original: 127, 127, 127;
+  --spice-rgb-notification-original: 70, 135, 214;
+  --spice-rgb-selected-row-original: 255, 255, 255;
+  --spice-rgb-player-original: 24, 24, 24;
+  --spice-rgb-highlight-original: 26, 26, 26;
+  --spice-rgb-sidebar-original: 0, 0, 0;
+  --spice-button-disabled: --invert-lightness(
+    var(--spice-button-disabled-original)
+  );
+  --spice-button-active: --invert-lightness(
+    var(--spice-button-active-original)
+  );
+  --spice-subtext: --invert-lightness(var(--spice-subtext-original));
+  --spice-highlight-elevated: --invert-lightness(
+    var(--spice-highlight-elevated-original)
+  );
+  --spice-main-elevated: --invert-lightness(
+    var(--spice-main-elevated-original)
+  );
+  --spice-shadow: --invert-lightness(var(--spice-shadow-original));
+  --spice-main: --invert-lightness(var(--spice-main-original));
+  --spice-tab-active: --invert-lightness(var(--spice-tab-active-original));
+  --spice-button: --invert-lightness(var(--spice-button-original));
+  --spice-text: --invert-lightness(var(--spice-text-original));
+  --spice-card: --invert-lightness(var(--spice-card-original));
+  --spice-notification-error: --invert-lightness(
+    var(--spice-notification-error-original)
+  );
+  --spice-misc: --invert-lightness(var(--spice-misc-original));
+  --spice-notification: --invert-lightness(var(--spice-notification-original));
+  --spice-selected-row: --invert-lightness(var(--spice-selected-row-original));
+  --spice-player: --invert-lightness(var(--spice-player-original));
+  --spice-highlight: --invert-lightness(var(--spice-highlight-original));
+  --spice-sidebar: --invert-lightness(var(--spice-sidebar-original));
+  --spice-rgb-button-disabled: --invert-lightness-rgb(83, 83, 83);
+  --spice-rgb-button-active: --invert-lightness-rgb(30, 215, 96);
+  --spice-rgb-subtext: --invert-lightness-rgb(179, 179, 179);
+  --spice-rgb-highlight-elevated: --invert-lightness-rgb(42, 42, 42);
+  --spice-rgb-main-elevated: --invert-lightness-rgb(36, 36, 36);
+  --spice-rgb-shadow: --invert-lightness-rgb(0, 0, 0);
+  --spice-rgb-main: --invert-lightness-rgb(18, 18, 18);
+  --spice-rgb-tab-active: --invert-lightness-rgb(51, 51, 51);
+  --spice-rgb-button: --invert-lightness-rgb(29, 185, 84);
+  --spice-rgb-text: --invert-lightness-rgb(255, 255, 255);
+  --spice-rgb-card: --invert-lightness-rgb(40, 40, 40);
+  --spice-rgb-notification-error: --invert-lightness-rgb(226, 33, 52);
+  --spice-rgb-misc: --invert-lightness-rgb(127, 127, 127);
+  --spice-rgb-notification: --invert-lightness-rgb(70, 135, 214);
+  --spice-rgb-selected-row: --invert-lightness-rgb(255, 255, 255);
+  --spice-rgb-player: --invert-lightness-rgb(24, 24, 24);
+  --spice-rgb-highlight: --invert-lightness-rgb(26, 26, 26);
+  --spice-rgb-sidebar: --invert-lightness-rgb(0, 0, 0);
+}
 
-    --spice-button-disabled: --invert-lightness(var(--spice-button-disabled-original));
-    --spice-button-active: --invert-lightness(var(--spice-button-active-original));
-    --spice-subtext: --invert-lightness(var(--spice-subtext-original));
-    --spice-highlight-elevated: --invert-lightness(var(--spice-highlight-elevated-original));
-    --spice-main-elevated: --invert-lightness(var(--spice-main-elevated-original));
-    --spice-shadow: --invert-lightness(var(--spice-shadow-original));
-    --spice-main: --invert-lightness(var(--spice-main-original));
-    --spice-tab-active: --invert-lightness(var(--spice-tab-active-original));
-    --spice-button: --invert-lightness(var(--spice-button-original));
-    --spice-text: --invert-lightness(var(--spice-text-original));
-    --spice-card: --invert-lightness(var(--spice-card-original));
-    --spice-notification-error: --invert-lightness(var(--spice-notification-error-original));
-    --spice-misc: --invert-lightness(var(--spice-misc-original));
-    --spice-notification: --invert-lightness(var(--spice-notification-original));
-    --spice-selected-row: --invert-lightness(var(--spice-selected-row-original));
-    --spice-player: --invert-lightness(var(--spice-player-original));
-    --spice-highlight: --invert-lightness(var(--spice-highlight-original));
-    --spice-sidebar: --invert-lightness(var(--spice-sidebar-original));
+/* These must stay after the default :root block above to override --alsw-invert. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --alsw-invert: 0;
+  }
+}
 
-    --spice-rgb-button-disabled: --invert-lightness-rgb(83, 83, 83);
-    --spice-rgb-button-active: --invert-lightness-rgb(30, 215, 96);
-    --spice-rgb-subtext: --invert-lightness-rgb(179, 179, 179);
-    --spice-rgb-highlight-elevated: --invert-lightness-rgb(42, 42, 42);
-    --spice-rgb-main-elevated: --invert-lightness-rgb(36, 36, 36);
-    --spice-rgb-shadow: --invert-lightness-rgb(0, 0, 0);
-    --spice-rgb-main: --invert-lightness-rgb(18, 18, 18);
-    --spice-rgb-tab-active: --invert-lightness-rgb(51, 51, 51);
-    --spice-rgb-button: --invert-lightness-rgb(29, 185, 84);
-    --spice-rgb-text: --invert-lightness-rgb(255, 255, 255);
-    --spice-rgb-card: --invert-lightness-rgb(40, 40, 40);
-    --spice-rgb-notification-error: --invert-lightness-rgb(226, 33, 52);
-    --spice-rgb-misc: --invert-lightness-rgb(127, 127, 127);
-    --spice-rgb-notification: --invert-lightness-rgb(70, 135, 214);
-    --spice-rgb-selected-row: --invert-lightness-rgb(255, 255, 255);
-    --spice-rgb-player: --invert-lightness-rgb(24, 24, 24);
-    --spice-rgb-highlight: --invert-lightness-rgb(26, 26, 26);
-    --spice-rgb-sidebar: --invert-lightness-rgb(0, 0, 0);
+:root.alsw-light {
+  --alsw-invert: 1;
+}
+
+:root.alsw-dark {
+  --alsw-invert: 0;
+}
+
+/* Window controls: minimize, maximize (a square) and close (an X). */
+.spotify__os--is-windows:not(.alsw-native-buttons-hidden)
+  .main-globalNav-contentRight
+  > :last-child:empty::before {
+  /* One native pixel, the stroke width and half of it, all divided by the zoom. */
+  --u: calc(1px / var(--alsw-native-scale));
+  --w: calc(var(--alsw-native-border-width) / var(--alsw-native-scale));
+  --h: calc(var(--w) / 2);
+  --bar: linear-gradient(#000, #000);
+
+  /* A band of width --w along the diagonal of a square box, with a 0.7px soft edge. */
+  --diag-down: linear-gradient(
+    to top right,
+    transparent calc(50% - var(--h) - 0.35 * var(--u)),
+    #000 calc(50% - var(--h) + 0.35 * var(--u))
+      calc(50% + var(--h) - 0.35 * var(--u)),
+    transparent calc(50% + var(--h) + 0.35 * var(--u))
+  );
+  --diag-up: linear-gradient(
+    to top left,
+    transparent calc(50% - var(--h) - 0.35 * var(--u)),
+    #000 calc(50% - var(--h) + 0.35 * var(--u))
+      calc(50% + var(--h) - 0.35 * var(--u)),
+    transparent calc(50% + var(--h) + 0.35 * var(--u))
+  );
+
+  content: "";
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  width: calc(135 * var(--u));
+  height: calc(64 * var(--u));
+  background: var(--alsw-native-outline);
+  mask:
+    /* minimize: a bar from x 18.5 to 27.5 at y 32.5 */
+    var(--bar) calc(18.5 * var(--u) - var(--h))
+      calc(32.5 * var(--u) - var(--h)) / calc(9 * var(--u) + var(--w)) var(--w)
+      no-repeat,
+    /* maximize: a square from (62.5, 27.5) to (71.5, 36.5), as top, bottom, left and right strokes */
+    var(--bar) calc(62.5 * var(--u) - var(--h))
+      calc(27.5 * var(--u) - var(--h)) / calc(9 * var(--u) + var(--w)) var(--w)
+      no-repeat,
+    var(--bar) calc(62.5 * var(--u) - var(--h))
+      calc(36.5 * var(--u) - var(--h)) / calc(9 * var(--u) + var(--w)) var(--w)
+      no-repeat,
+    var(--bar) calc(62.5 * var(--u) - var(--h))
+      calc(27.5 * var(--u) - var(--h)) / var(--w) calc(9 * var(--u) + var(--w))
+      no-repeat,
+    var(--bar) calc(71.5 * var(--u) - var(--h))
+      calc(27.5 * var(--u) - var(--h)) / var(--w) calc(9 * var(--u) + var(--w))
+      no-repeat,
+    /* close: an X from (107.5, 27.5) to (116.5, 36.5) */ var(--diag-down)
+      calc(107.5 * var(--u) - var(--h)) calc(27.5 * var(--u) - var(--h)) /
+      calc(9 * var(--u) + var(--w)) calc(9 * var(--u) + var(--w)) no-repeat,
+    var(--diag-up) calc(107.5 * var(--u) - var(--h))
+      calc(27.5 * var(--u) - var(--h)) / calc(9 * var(--u) + var(--w))
+      calc(9 * var(--u) + var(--w)) no-repeat;
+  pointer-events: none;
+}
+
+.spotify__os--is-windows:not(.alsw-native-buttons-hidden)
+  .main-globalNav-historyButtonsWrapper
+  > :first-child:empty::before {
+  --u: calc(1px / var(--alsw-native-scale));
+  --w: calc(var(--alsw-native-border-width) / var(--alsw-native-scale));
+
+  /* The dots are discs, not strokes: their radius is equal to the stroke width. */
+  --r: calc(var(--w));
+
+  content: "";
+  position: absolute;
+
+  /* The box is padded by 22 x 16 native pixels so that wide borders aren't clipped; its origin is (-22, -16). */
+  top: calc(-16 * var(--u));
+  left: calc(-22 * var(--u));
+  z-index: 1;
+  width: calc(72 * var(--u));
+  height: calc(48 * var(--u));
+  background: var(--alsw-native-outline);
+  mask:
+    radial-gradient(
+      circle at calc(29.32 * var(--u)) calc(24 * var(--u)),
+      #000 calc(var(--r) - 0.35 * var(--u)),
+      transparent calc(var(--r) + 0.35 * var(--u))
+    ),
+    radial-gradient(
+      circle at calc(38 * var(--u)) calc(24 * var(--u)),
+      #000 calc(var(--r) - 0.35 * var(--u)),
+      transparent calc(var(--r) + 0.35 * var(--u))
+    ),
+    radial-gradient(
+      circle at calc(46.68 * var(--u)) calc(24 * var(--u)),
+      #000 calc(var(--r) - 0.35 * var(--u)),
+      transparent calc(var(--r) + 0.35 * var(--u))
+    );
+  pointer-events: none;
+}
+
+/* Maximized window: the maximize glyph is the restore glyph, two overlapping squares. */
+.spotify__os--is-windows.alsw-maximized:not(.alsw-native-buttons-hidden)
+  .main-globalNav-contentRight
+  > :last-child:empty::before {
+  mask:
+    var(--bar) calc(18.5 * var(--u) - var(--h))
+      calc(32.5 * var(--u) - var(--h)) / calc(9 * var(--u) + var(--w)) var(--w)
+      no-repeat,
+    /* front square, from (62.5, 29.5) to (69.5, 36.5) */ var(--bar)
+      calc(62.5 * var(--u) - var(--h)) calc(29.5 * var(--u) - var(--h)) /
+      calc(7 * var(--u) + var(--w)) var(--w) no-repeat,
+    var(--bar) calc(62.5 * var(--u) - var(--h))
+      calc(36.5 * var(--u) - var(--h)) / calc(7 * var(--u) + var(--w)) var(--w)
+      no-repeat,
+    var(--bar) calc(62.5 * var(--u) - var(--h))
+      calc(29.5 * var(--u) - var(--h)) / var(--w) calc(7 * var(--u) + var(--w))
+      no-repeat,
+    var(--bar) calc(69.5 * var(--u) - var(--h))
+      calc(29.5 * var(--u) - var(--h)) / var(--w) calc(7 * var(--u) + var(--w))
+      no-repeat,
+    /* back square, as the stroke (64.5, 28.5) > (64.5, 27.5) > (71.5, 27.5) > (71.5, 34.5) > (69.5, 34.5) */
+    var(--bar) calc(64.5 * var(--u) - var(--h))
+      calc(27.5 * var(--u) - var(--h)) / var(--w) calc(1 * var(--u) + var(--w))
+      no-repeat,
+    var(--bar) calc(64.5 * var(--u) - var(--h))
+      calc(27.5 * var(--u) - var(--h)) / calc(7 * var(--u) + var(--w)) var(--w)
+      no-repeat,
+    var(--bar) calc(71.5 * var(--u) - var(--h))
+      calc(27.5 * var(--u) - var(--h)) / var(--w) calc(7 * var(--u) + var(--w))
+      no-repeat,
+    var(--bar) calc(69.5 * var(--u) - var(--h))
+      calc(34.5 * var(--u) - var(--h)) / calc(2 * var(--u) + var(--w)) var(--w)
+      no-repeat,
+    var(--diag-down) calc(107.5 * var(--u) - var(--h))
+      calc(27.5 * var(--u) - var(--h)) / calc(9 * var(--u) + var(--w))
+      calc(9 * var(--u) + var(--w)) no-repeat,
+    var(--diag-up) calc(107.5 * var(--u) - var(--h))
+      calc(27.5 * var(--u) - var(--h)) / calc(9 * var(--u) + var(--w))
+      calc(9 * var(--u) + var(--w)) no-repeat;
+}
+
+/* Menu button: three dots in the reserved 28 x 16 box. */
+.spotify__os--is-windows:not(.alsw-native-buttons-hidden)
+  .main-globalNav-historyButtonsWrapper
+  > :first-child:empty {
+  position: relative;
+}
+
+/* Theme switch (theme.js): light, system and dark, left of the "What's New" bell. The active mode is green. */
+.alsw-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(2px / var(--alsw-native-scale));
+  margin-inline-end: calc(8px / var(--alsw-native-scale));
+  padding: calc(2px / var(--alsw-native-scale));
+  border-radius: 999px;
+  background: var(--spice-card);
+}
+
+.alsw-mode-switch button {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: calc(28px / var(--alsw-native-scale));
+  height: calc(28px / var(--alsw-native-scale));
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--spice-subtext);
+  cursor: pointer;
+}
+
+.alsw-mode-switch button:hover {
+  color: var(--spice-text);
+}
+
+.alsw-mode-switch button[aria-pressed="true"] {
+  color: var(--spice-button);
+}
+
+.alsw-mode-switch button:focus-visible {
+  outline: 2px solid var(--spice-button);
+  outline-offset: -2px;
+}
+
+.alsw-mode-switch svg {
+  width: calc(16px / var(--alsw-native-scale));
+  height: calc(16px / var(--alsw-native-scale));
 }

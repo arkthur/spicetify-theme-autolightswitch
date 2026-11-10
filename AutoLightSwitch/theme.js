@@ -1,12 +1,17 @@
 // AutoLightSwitch
 //
-// 1. Rule patching: Spotify's own CSS rules are edited in place through the CSSOM, the same
-//    way a DevTools edit works. Nothing is injected as a constructed stylesheet, so each
-//    edited rule keeps its original position, @layer, specificity and nesting.
+// 1. Color inversion: every hard-coded color found in a stylesheet rule or in an inline style (including custom
+//    property definitions such as --background-base: #e91429) is wrapped in --invert-lightness(). Rules are edited
+//    in place through the CSSOM, the same way a DevTools edit works, so each edited rule keeps its original
+//    position, @layer, specificity and nesting. Nothing is injected as a constructed stylesheet.
+//    Colors that are already light or already inverted are never wrapped (see keepProperty and the skips below),
+//    and every consumer of a wrapped definition inherits the inversion through var(), so use sites need no patch.
 // 2. System theme: Spotify's embedded Chromium always reports prefers-color-scheme: dark, so
 //    the OS theme is read from system-theme.txt ("light" / "dark"), which
 //    SystemThemeWatcher.exe keeps up to date (see SystemThemeWatcher.cs). When that file is
 //    missing, user.css falls back to the media query.
+// 3. Theme switch: three buttons (light, system, dark) in the top bar, left of the "What's New" bell. Light and
+//    dark are forced, system follows the Windows setting. The choice is kept in localStorage.
 (function autoLightSwitch() {
   "use strict";
 
@@ -15,228 +20,84 @@
   const POLL_MS = 2000;
   const MISSING_POLL_MS = 10000;
 
-  // selector + ctx identify a stock rule; "set" holds the declarations to patch as [prop, newValue, stockValue?].
-  // A declaration is only patched when its current value equals stockValue (default: newValue with
-  // --invert-lightness() removed), so rules that changed in a Spotify update are skipped instead of being broken.
-  // ctx lists the enclosing @layer / @supports blocks.
-  //
-  // Tokens like --background-base hold a dark-theme value (a hard-coded color) unless a class set assigns a plain
-  // --spice-* color, which user.css has already inverted. Every definition of a token is tagged with a companion
-  // flag (--alsw-spice-<token>: 1 for a plain --spice-* color, 0 otherwise), so the use sites know where the
-  // value came from instead of guessing from its color. See tagDefinition().
-  const TOKENS = ["--background-base", "--text-base", "--text-subdued"];
-  const flagOf = (token) => "--alsw-spice-" + token.slice(2);
-  const invertUnlessSpice = (token) =>
-    `if(style(${flagOf(token)}: 1): var(${token}); else: --invert-lightness(var(${token})))`;
-  const PATCHES = [
-    { selector: ".encore-internal-color-text-subdued", ctx: ["layer:encore"], set: [["color", invertUnlessSpice("--text-subdued"), "var(--text-subdued)"]] },
-    { selector: ".JhOTA2pevTUzQPJ7GJG0", ctx: [], set: [["box-shadow", "0 4px 60px --invert-lightness(#00000080)"]] },
-    { selector: ".LayvZgU4ToYAIUl3mdij", ctx: [], set: [["color", "--invert-lightness(var(--header-text-color))"]] },
-    { selector: ".J4_kkGYm5hjbZlztykxr", ctx: [], set: [["color", "--invert-lightness(var(--lyrics-color-inactive))"]] },
-    { selector: ".J4_kkGYm5hjbZlztykxr.SOT5gG00YqnGQ4uR7PwQ", ctx: [], set: [["color", "--invert-lightness(var(--lyrics-color-active))"]] },
-    { selector: ".J4_kkGYm5hjbZlztykxr.l_p6nU70V4sJ7XaycCp3:hover", ctx: [], set: [["color", "--invert-lightness(var(--lyrics-color-active))"]] },
-    { selector: ".J4_kkGYm5hjbZlztykxr.l_p6nU70V4sJ7XaycCp3", ctx: [], set: [["color", "--invert-lightness(var(--lyrics-color-inactive))"]] },
-    { selector: ".J4_kkGYm5hjbZlztykxr.y45YX8smwP4lW13IQulz:hover", ctx: [], set: [["color", "--invert-lightness(var(--lyrics-color-active))"]] },
-    { selector: ".J4_kkGYm5hjbZlztykxr.y45YX8smwP4lW13IQulz", ctx: [], set: [["color", "--invert-lightness(var(--lyrics-color-inactive))"]] },
-    { selector: ".LY7FQL7fwsfvvsefVIik", ctx: [], set: [["color", "--invert-lightness(var(--lyrics-color-inactive))"]] },
-    { selector: ".Ii0P5lvVrAzHgsutQTVz", ctx: [], set: [["background-color", "--invert-lightness(var(--lyrics-color-background))"]] },
-    { selector: ".Ke_cNZcH3Yvd2QEbgKJk:before", ctx: [], set: [["background", "linear-gradient(--invert-lightness(#000000d9) 0%,--invert-lightness(#000000bf) 15%,--invert-lightness(#000000a3) 25%,--invert-lightness(#00000082) 35%,--invert-lightness(#00000061) 45%,--invert-lightness(#00000042) 55%,--invert-lightness(#00000029) 65%,--invert-lightness(#00000017) 75%,--invert-lightness(#0000000a) 85%,--invert-lightness(#00000003) 93%,--invert-lightness(#0000) 100%)"]] },
-    { selector: ".e-10860-legacy-button-primary:hover .e-10860-button-primary__inner", ctx: ["layer:encore"], set: [["background-color", "--invert-lightness(var(--background-highlight))"]] },
-    { selector: ".e-10860-legacy-chip:hover>.e-10860-legacy-chip__inner.e-10860-legacy-chip__inner--selected", ctx: ["layer:encore"], set: [["background-color", "--invert-lightness(var(--background-highlight))"]] },
-    { selector: ".e-10860-legacy-button-primary:active .e-10860-button-primary__inner", ctx: ["layer:encore"], set: [["background-color", "--invert-lightness(var(--background-press))"]] },
-    { selector: ".e-10860-legacy-chip:active>.e-10860-legacy-chip__inner.e-10860-legacy-chip__inner--selected", ctx: ["layer:encore"], set: [["background-color", "--invert-lightness(var(--background-press))"]] },
-    { selector: ".NMt6sLFwXdQoCRD6zzVJ", ctx: [], set: [["box-shadow", "0 8px 24px --invert-lightness(#00000080)"]] },
-    { selector: ".view-homeShortcutsGrid-shortcut .view-homeShortcutsGrid-imageWrapper", ctx: [], set: [["box-shadow", "0 8px 24px --invert-lightness(#00000080)"]] },
-    { selector: ".au3m86XLSnE_qCxesM2W", ctx: [], set: [["background", "linear-gradient(--invert-lightness(#0009) 46.75%,--invert-lightness(#0006) 63.5%,--invert-lightness(#0000001a) 83.72%,--invert-lightness(#0000) 97.91%)"]] },
-    { selector: ".VQnzdNl0IS5KgfsKHo7T", ctx: [], set: [["background", "linear-gradient(--invert-lightness(#0000) 2.09%,--invert-lightness(#0000001a) 16.28%,--invert-lightness(#0006) 36.5%,--invert-lightness(#0009) 53.25%)"]] },
-    { selector: ".D8uRyOobEAEuRXg_R43p", ctx: [], set: [["background", "--invert-lightness(#0000008a)"]] },
-    { selector: ".SG9nWInDQN0E8DeXv197", ctx: [], set: [["background-color", "--invert-lightness(var(--background-base))"]] },
-    { selector: ".hbNOZbHD3bPL3OcHQWNn", ctx: [], set: [["background-color", "--invert-lightness(var(--background-base))"], ["--color-from", "--invert-lightness(var(--background-base-min-contrast))"]] },
-    { selector: ".nfBy1HoO33kgPOyEc3WZ", ctx: [], set: [["background", "linear-gradient(--invert-lightness(#0000) 0%, --invert-lightness(#00000080) 100%), var(--background-noise)"]] },
-    { selector: ".venMPE3QitySGonlITLf", ctx: [], set: [["background", "linear-gradient(--invert-lightness(#0000) 0%, --invert-lightness(#0009) 100%), var(--background-noise)"]] },
-    { selector: ".venMPE3QitySGonlITLf:after", ctx: ["supports:(color: lab(from red l 1 1% / calc(alpha + 0.1)))"], set: [["background-image", "linear-gradient(--invert-lightness(oklch(from var(--background-base) l c h)) 0%, --invert-lightness(oklch(from var(--background-base) l c h/70%)) 40%)"]] },
-    { selector: ".main-entityHeader-shadow", ctx: [], set: [["box-shadow", "0 4px 60px --invert-lightness(#00000080)"]] },
-    { selector: ".KVUEWo6P2nuTDO5g_Qar .c1fjuXENW9S3t_0ok5su", ctx: [], set: [["--carousel-start-chevron-gradient", "--invert-lightness(#121212b3)"], ["--carousel-end-chevron-gradient", "--invert-lightness(#121212b3)"]] },
-    { selector: ".main-gridContainer-homepageWithCarousels .main-gridContainer-homepageContent", ctx: [], set: [["--carousel-start-chevron-gradient", "--invert-lightness(#121212b3)"], ["--carousel-end-chevron-gradient", "--invert-lightness(#121212b3)"]] },
-    { selector: ".r8bczAWCEgb9_L0iyIcc", ctx: [], set: [["--color-from", "--invert-lightness(var(--background-base-70))"]] },
-    { selector: ".IfBZ5VdI_2nwDMl4H6Yh", ctx: [], set: [["background-image", "linear-gradient(--invert-lightness(#0009) 0%, var(--background-base) 100%), var(--background-noise)"]] },
-    { selector: ".main-topBar-background", ctx: [], set: [["background-color", "--invert-lightness(var(--background-base))"]] },
-    { selector: ".main-topBar-overlay", ctx: [], set: [["background-color", "--invert-lightness(#0009)"]] },
-    { selector: ".xCEkyVpabf3oVGmFQVej.dtglbjFWIMhmwHwayh7P:after", ctx: [], set: [["background-color", "--invert-lightness(#0009)"]] },
-    { selector: ".kMaYBahSBLOnErF7DLR2", ctx: [], set: [["background-image", "linear-gradient(--invert-lightness(#0009) 0%, var(--background-base) 100%), var(--background-noise)"]] },
-    { selector: ".NknVk8hYvXI6ovbE8Zj0.YWvtYcp4OVsd4WMPoZOq", ctx: [], set: [["background-color", "--invert-lightness(var(--lyrics-color-background))"]] },
-    { selector: ".EsUNkZWFxKwc6fbKNfzW", ctx: [], set: [["background", "linear-gradient(--invert-lightness(oklch(18% 0 0/.85)) 0%,--invert-lightness(#0000) 30%)"]] },
-    { selector: ".QIBjBaN3C9pj9bsrHAPv", ctx: [], set: [["background", "linear-gradient(to bottom, transparent 0% var(--npv-canvas-bottom-scrim-clear-end), --invert-lightness(oklch(18% 0 0/.8)) var(--npv-canvas-bottom-scrim-mid-stop), --invert-lightness(oklch(18% 0 0)) var(--npv-canvas-bottom-scrim-solid-stop))"]] },
-    { selector: ".EDgXuV5wMChY7CX03Q8Z", ctx: [], set: [["background", "linear-gradient(--invert-lightness(oklch(18% 0 0/.63)) 0%,--invert-lightness(oklch(18% 0 0/.53)) 30% 70%,--invert-lightness(oklch(18% 0 0)) 95%)"]] },
-    { selector: ".bqVl6oP9CHC70vAFzqf3", ctx: [], set: [["background-color", "--invert-lightness(#000000b3)"]] },
-    { selector: ".Y3i0QVby7QVDsOh2l0_m", ctx: [], set: [["background-color", "--invert-lightness(#00000080)"]] },
-    { selector: ".ArpdzWdgRW_8lwpikPGW", ctx: [], set: [["box-shadow", "0 6px 10px --invert-lightness(#0009)"]] },
-    { selector: "@keyframes HMwEYfqJnNpFPPs0mEgw to", ctx: [], set: [["box-shadow", "0 6px 10px --invert-lightness(#0009)"]] },
-    { selector: ".b2LKgxzAnfpFyHOk0oHI", ctx: [], set: [["background", "--invert-lightness(#202f72)"]] },
-    { selector: ".l8RVrxnqg47P8Sq2lW7X", ctx: [], set: [["background-color", "--invert-lightness(#0000004d)"]] },
-    { selector: ".e-10860-button-primary__inner", ctx: ["layer:encore"], set: [["background-color", invertUnlessSpice("--background-base"), "var(--background-base)"], ["color", invertUnlessSpice("--text-base"), "var(--text-base)"]] },
-    { selector: ".f5IimFOcWI6VZcJ1ilua", ctx: [], set: [["background-color", "--invert-lightness(var(--background-base))"], ["--color-from", "--invert-lightness(var(--cinema-mode-bg-color-from))"], ["--color-to", "--invert-lightness(var(--cinema-mode-bg-color-to))"]] },
-  ];
+  const stats = { colors: 0, inlineColors: 0, skipped: [] };
 
-  // Nested rules added to a stock rule, for contextual overrides ("inside .X, invert"). A rule is only inserted
-  // when the stock rule doesn't already contain one starting with the same selector.
-  const NESTED = [
-    { selector: "a:not([data-encore-id])", ctx: [], rule: "&.YKFf7aD7NQbSIyEGzTxe { color: --invert-lightness(var(--spice-text)); }" },
-    { selector: ".encore-internal-color-text-base", ctx: ["layer:encore"], rule: ".RfCzM5zFPeG1MfeMLM4h & { color: --invert-lightness(var(--text-base)); }" },
-  ];
-  const nestedSelector = (rule) => rule.slice(0, rule.indexOf("{")).trim();
+  const COLOR_SRC =
+    "(?<!--invert-lightness\\()(?:#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{4}|[0-9a-f]{3})\\b|\\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color|color-mix)\\((?:(?!var\\()[^()])*\\))";
+  const COLOR_RE = new RegExp(COLOR_SRC, "gi");
+  // url(...) is matched first so that color-looking text inside it (svg#fragment) is left alone.
+  const COLOR_OR_URL_RE = new RegExp(`url\\((?:"[^"]*"|'[^']*'|[^)]*)\\)|${COLOR_SRC}`, "gi");
+  const wrapColors = (value) =>
+    value.replace(COLOR_OR_URL_RE, (match) => (/^url\(/i.test(match) ? match : `${FN}(${match})`));
 
-  const squash = (s) => s.replace(/\s+/g, "");
-  // Encore classes embed an experiment number that changes between Spotify versions (e-10860-..., e-101040-...),
-  // so any number matches. selectorText reports :before/:after as ::before/::after, so both spellings are unified.
-  const normSelector = (s) =>
-    s
-      .replace(/\.e-\d+-/g, ".e-N-")
-      .replace(/::(before|after|first-line|first-letter)/g, ":$1")
-      .replace(/\s*([>+~,])\s*/g, "$1")
-      .replace(/\s+/g, " ")
-      .trim();
-  const normValue = (s) => s.replace(/\s*([,()])\s*/g, "$1").replace(/\s+/g, " ").trim().toLowerCase();
-  const ctxKey = (ctx) => ctx.map(squash).join("|");
+  // The --spice-* palette is rebuilt and inverted by user.css, and --alsw-* are the theme's own switches.
+  // Colors containing var() (rgba(var(--spice-rgb-text), .3)) are never matched: they come from the palette.
+  const keepProperty = (name) => name.startsWith("--spice-") || name.startsWith("--alsw-");
 
-  const bySelector = new Map();
-  const nestedBySelector = new Map();
-  for (const [list, map] of [[PATCHES, bySelector], [NESTED, nestedBySelector]]) {
-    for (const patch of list) {
-      const key = normSelector(patch.selector);
-      if (!map.has(key)) map.set(key, []);
-      map.get(key).push(patch);
-    }
-  }
+  // Rules scoped to Encore's light theme already hold light colors.
+  const LIGHT_SCOPE_RE = /light-theme/;
+  // The theme's own sheets define the palette the inversion starts from.
+  const THEME_SHEET_RE = /\/(?:user|colors)\.css(?:[?#]|$)/;
 
-  // Removes every --invert-lightness(...) wrapper, keeping its argument.
-  function unwrap(value) {
-    let out = "";
-    let i = 0;
-    while (i < value.length) {
-      const start = value.indexOf(FN + "(", i);
-      if (start < 0) {
-        out += value.slice(i);
-        break;
-      }
-      out += value.slice(i, start);
-      let depth = 1;
-      let end = start + FN.length + 1;
-      while (depth && end < value.length) {
-        const ch = value[end++];
-        if (ch === "(") depth++;
-        else if (ch === ")") depth--;
-      }
-      out += unwrap(value.slice(start + FN.length + 1, end - 1));
-      i = end;
-    }
-    return out;
-  }
-
-  const probe = document.createElement("div").style;
-  function canonical(prop, value) {
-    probe.removeProperty(prop);
-    probe.setProperty(prop, value);
-    return normValue(probe.getPropertyValue(prop) || value);
-  }
-
-  const stats = { patched: 0, skipped: [], tagged: 0, inline: 0, nested: 0 };
-
-  // "1": the value is a plain --spice-* color (already light). A value that just forwards another token takes
-  // that token's flag. Anything else (hex, rgba(), color-mix(), ...) is a dark-theme value: "0".
-  function classify(value) {
-    const v = value.trim();
-    if (/^var\(\s*--spice-[\w-]+\s*\)$/.test(v)) return "1";
-    const ref = v.match(/^var\(\s*(--[\w-]+)\s*[,)]/);
-    if (ref && TOKENS.includes(ref[1])) return `var(${flagOf(ref[1])})`;
-    return "0";
-  }
-
-  const sameValue = (a, b) => a.replace(/\s+/g, "") === b.replace(/\s+/g, "");
-
-  // Tags a stock rule (class set) or an inline style that defines a token, in the same declaration block, so
-  // the flag travels with the value through the cascade and is overridden together with it.
-  function tagDefinition(style) {
-    let changed = false;
-    for (const token of TOKENS) {
-      const flag = flagOf(token);
-      const value = style.getPropertyValue(token);
-      const current = style.getPropertyValue(flag);
-      if (value) {
-        const wanted = classify(value);
-        if (!sameValue(current, wanted)) {
-          style.setProperty(flag, wanted, style.getPropertyPriority(token));
-          changed = true;
-        }
-      } else if (current) {
-        style.removeProperty(flag);
-        changed = true;
+  // Splits a declaration block on top-level semicolons (not inside (), "" or '').
+  function splitDeclarations(text) {
+    const out = [];
+    let depth = 0;
+    let quote = "";
+    let start = 0;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (quote) {
+        if (ch === "\\") i++;
+        else if (ch === quote) quote = "";
+      } else if (ch === '"' || ch === "'") quote = ch;
+      else if (ch === "(") depth++;
+      else if (ch === ")") depth--;
+      else if (ch === ";" && depth === 0) {
+        out.push(text.slice(start, i));
+        start = i + 1;
       }
     }
-    return changed;
+    out.push(text.slice(start));
+    return out.map((s) => s.trim()).filter(Boolean);
   }
 
-  function patchDeclarations(rule, patch) {
-    for (const [prop, wrapped, stock] of patch.set) {
-      const current = rule.style.getPropertyValue(prop);
-      if (!current || current.includes(FN)) continue;
-      if (canonical(prop, stock ?? unwrap(wrapped)) !== canonical(prop, current)) {
-        stats.skipped.push(`${patch.selector} { ${prop} }`);
-        continue;
-      }
-      rule.style.setProperty(prop, wrapped, rule.style.getPropertyPriority(prop));
-      if (rule.style.getPropertyValue(prop).includes(FN)) stats.patched++;
-      else stats.skipped.push(`${patch.selector} { ${prop} } (rejected)`);
+  // The block is read back through cssText, which serializes shorthands (background, box-shadow, ...) as written,
+  // so a shorthand is patched as a whole instead of through the longhands it expands to.
+  function wrapHardcodedColors(rule, label) {
+    const text = rule.style.cssText;
+    if (text.search(COLOR_RE) < 0) return;
+    for (const declaration of splitDeclarations(text)) {
+      const colon = declaration.indexOf(":");
+      if (colon < 0) continue;
+      const name = declaration.slice(0, colon).trim();
+      if (keepProperty(name)) continue;
+      const important = /\s*!important$/i.test(declaration);
+      const value = declaration.slice(colon + 1).replace(/\s*!important$/i, "").trim();
+      const next = wrapColors(value);
+      if (next === value) continue;
+      rule.style.setProperty(name, next, important ? "important" : "");
+      if (rule.style.getPropertyValue(name).includes(FN)) stats.colors++;
+      else stats.skipped.push(`${label} { ${name} } (rejected)`);
     }
   }
 
-  function patchStyleRule(rule, ctx) {
-    if (tagDefinition(rule.style)) stats.tagged++;
-    const key = normSelector(rule.selectorText);
-    const here = ctxKey(ctx);
-    for (const patch of bySelector.get(key) || []) {
-      if (ctxKey(patch.ctx) === here) patchDeclarations(rule, patch);
-    }
-    for (const patch of nestedBySelector.get(key) || []) {
-      if (ctxKey(patch.ctx) !== here) continue;
-      const selector = squash(nestedSelector(patch.rule));
-      if (Array.from(rule.cssRules).some((r) => r.selectorText && squash(r.selectorText).includes(selector.replace(/&$/, "")))) continue;
-      try {
-        rule.insertRule(patch.rule, rule.cssRules.length);
-        stats.nested++;
-      } catch (error) {
-        stats.skipped.push(`${patch.selector} { ${nestedSelector(patch.rule)} } (${error.message})`);
-      }
-    }
-  }
-
-  function contextOf(rule) {
-    if (rule instanceof CSSLayerBlockRule) return "layer:" + rule.name;
-    if (rule instanceof CSSSupportsRule) return "supports:" + rule.conditionText;
-    return "group:" + rule.constructor.name + ":" + (rule.conditionText || rule.cssText.slice(0, 40));
-  }
-
-  // Keyframes are addressed as "@keyframes <name> <keyText>", e.g. "@keyframes abc to". Chrome reports
-  // from/to as 0%/100%, so those are mapped back.
-  const keyText = (text) => ({ "0%": "from", "100%": "to" })[text] || text;
-  function patchKeyframes(rule, ctx) {
-    const here = ctxKey(ctx);
-    for (const frame of rule.cssRules) {
-      const key = normSelector(`@keyframes ${rule.name} ${keyText(frame.keyText)}`);
-      for (const patch of bySelector.get(key) || []) {
-        if (ctxKey(patch.ctx) === here) patchDeclarations(frame, patch);
-      }
-    }
-  }
-
-  function walk(rules, ctx) {
+  // wrap: false inside the theme's own sheets and light-theme scopes.
+  function walk(rules, wrap) {
     for (const rule of rules) {
       if (rule instanceof CSSStyleRule) {
-        patchStyleRule(rule, ctx);
+        const scoped = wrap && !LIGHT_SCOPE_RE.test(rule.selectorText);
+        if (scoped) wrapHardcodedColors(rule, rule.selectorText);
+        if (rule.cssRules.length) walk(rule.cssRules, scoped);
       } else if (rule instanceof CSSKeyframesRule) {
-        patchKeyframes(rule, ctx);
+        if (!wrap) continue;
+        for (const frame of rule.cssRules) wrapHardcodedColors(frame, `@keyframes ${rule.name} ${frame.keyText}`);
+      } else if (typeof CSSNestedDeclarations !== "undefined" && rule instanceof CSSNestedDeclarations) {
+        if (wrap) wrapHardcodedColors(rule, "(nested declarations)");
+      } else if (typeof CSSFunctionRule !== "undefined" && rule instanceof CSSFunctionRule) {
+        continue;
       } else if (rule.cssRules) {
-        walk(rule.cssRules, ctx.concat(contextOf(rule)));
+        walk(rule.cssRules, wrap);
       }
     }
   }
@@ -251,7 +112,7 @@
       return;
     }
     seenSheets.add(sheet);
-    walk(rules, []);
+    walk(rules, !THEME_SHEET_RE.test(sheet.href || ""));
   }
 
   function watchLink(link) {
@@ -278,37 +139,48 @@
       }
     }).observe(document.head, { childList: true });
 
-    startInlineTagging();
+    startInlineInversion();
 
     // Inspect from DevTools: __autoLightSwitch.stats
-    window.__autoLightSwitch = { stats, patchSheet, PATCHES };
+    window.__autoLightSwitch = { stats, patchSheet, setMode: (next) => setMode(next) };
   }
 
-  // React redefines tokens through inline styles (style={{"--text-subdued": "#FFBDB4"}}). The same flag is
-  // written next to the token in the element's style attribute, so the redefinition is tagged exactly like a
-  // class set; the observer runs before the next paint.
-  const INLINE_SELECTOR = TOKENS.map((token) => `[style*="${token}"]`).join(",");
+  // React sets colors through inline styles, including custom properties (style={{"--text-subdued": "#FFBDB4"}})
+  // and gradients (style="background-image: linear-gradient(rgba(0, 0, 0, 0.5), ...)"). The observer runs before
+  // the next paint, and an already wrapped value is left alone, so rewriting the attribute can't loop.
+  const INLINE_SELECTOR = "[style]";
 
-  function tagInline(element) {
-    const attr = element.getAttribute("style");
-    if (!attr || !attr.includes("--")) return;
-    if (tagDefinition(element.style)) stats.inline++;
+  function invertInlineColors(style) {
+    const updates = [];
+    for (const prop of style) {
+      if (keepProperty(prop)) continue;
+      const value = style.getPropertyValue(prop);
+      const next = wrapColors(value);
+      if (next !== value) updates.push([prop, next, style.getPropertyPriority(prop)]);
+    }
+    for (const [prop, value, priority] of updates) style.setProperty(prop, value, priority);
+    return updates.length > 0;
   }
 
-  function tagSubtree(node) {
+  function invertInline(element) {
+    if (!element.hasAttribute("style")) return;
+    if (invertInlineColors(element.style)) stats.inlineColors++;
+  }
+
+  function invertSubtree(node) {
     if (node.nodeType !== Node.ELEMENT_NODE) return;
-    if (node.matches(INLINE_SELECTOR)) tagInline(node);
-    node.querySelectorAll(INLINE_SELECTOR).forEach(tagInline);
+    if (node.matches(INLINE_SELECTOR)) invertInline(node);
+    node.querySelectorAll(INLINE_SELECTOR).forEach(invertInline);
   }
 
-  function startInlineTagging() {
-    tagSubtree(document.documentElement);
+  function startInlineInversion() {
+    invertSubtree(document.documentElement);
     new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         if (mutation.type === "attributes") {
-          tagInline(mutation.target);
+          invertInline(mutation.target);
         } else {
-          mutation.addedNodes.forEach(tagSubtree);
+          mutation.addedNodes.forEach(invertSubtree);
         }
       }
     }).observe(document.documentElement, {
@@ -332,21 +204,138 @@
     }
   }
 
-  function applyTheme(mode) {
-    const root = document.documentElement;
-    root.classList.toggle("alsw-light", mode === "light");
-    root.classList.toggle("alsw-dark", mode === "dark");
+  // Light and dark are forced from the top bar switch; system follows the Windows setting read by readSystemTheme().
+  const MODE_KEY = "autolightswitch:mode";
+  const MODES = ["light", "system", "dark"];
+  const MODE_LABELS = { light: "Light theme", system: "System theme", dark: "Dark theme" };
+  const MODE_ICONS = {
+    light:
+      '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>',
+    system: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+    dark: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  };
+
+  function loadMode() {
+    try {
+      const saved = localStorage.getItem(MODE_KEY);
+      return MODES.includes(saved) ? saved : "system";
+    } catch {
+      return "system";
+    }
   }
 
+  let mode = loadMode();
+  let systemTheme = null;
+  let pollTimer = 0;
+
+  // The theme in effect: the forced one, or the system's. null (system, no watcher) leaves the media query in charge.
+  const effectiveTheme = () => (mode === "system" ? systemTheme : mode);
+
+  function applyTheme() {
+    const theme = effectiveTheme();
+    const root = document.documentElement;
+    root.classList.toggle("alsw-light", theme === "light");
+    root.classList.toggle("alsw-dark", theme === "dark");
+    for (const button of document.querySelectorAll(".alsw-mode-switch [data-mode]")) {
+      button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
+    }
+  }
+
+  function setMode(next) {
+    if (!MODES.includes(next) || next === mode) return;
+    mode = next;
+    try {
+      localStorage.setItem(MODE_KEY, mode);
+    } catch {
+      // The choice then only lasts until Spotify restarts.
+    }
+    applyTheme();
+  }
+
+  // Polling continues while a theme is forced, so that going back to "system" is instant.
   async function pollSystemTheme() {
-    const mode = await readSystemTheme();
-    applyTheme(mode);
-    setTimeout(pollSystemTheme, mode ? POLL_MS : MISSING_POLL_MS);
+    clearTimeout(pollTimer);
+    systemTheme = await readSystemTheme();
+    applyTheme();
+    pollTimer = setTimeout(pollSystemTheme, systemTheme ? POLL_MS : MISSING_POLL_MS);
+  }
+
+  // The switch sits in the top bar, left of the "What's New" bell (the first child of .main-actionButtons). React
+  // rebuilds that bar now and then, so it is put back whenever it goes missing.
+  function createModeSwitch() {
+    const group = document.createElement("div");
+    group.className = "alsw-mode-switch";
+    group.setAttribute("role", "group");
+    group.setAttribute("aria-label", "Theme");
+    for (const value of MODES) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.mode = value;
+      button.title = MODE_LABELS[value];
+      button.setAttribute("aria-label", MODE_LABELS[value]);
+      button.setAttribute("aria-pressed", String(value === mode));
+      button.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${MODE_ICONS[value]}</svg>`;
+      button.addEventListener("click", () => setMode(value));
+      group.append(button);
+    }
+    return group;
+  }
+
+  let modeSwitch = null;
+  function ensureModeSwitch() {
+    const bar = document.querySelector(".main-actionButtons");
+    if (!bar) return;
+    modeSwitch ??= createModeSwitch();
+    if (bar.firstElementChild !== modeSwitch) bar.prepend(modeSwitch);
+  }
+
+  function startModeSwitch() {
+    let queued = false;
+    ensureModeSwitch();
+    new MutationObserver(() => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        ensureModeSwitch();
+      });
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+
+  // Spotify hides the native menu and window buttons in some views (fullscreen, cinema mode) through
+  // NativeAPI.setWindowButtonsVisibility(). user.css paints a plate behind them, so it has to know. Spicetify
+  // loads after this script starts, hence the retries.
+  function trackNativeButtons(attempt = 0) {
+    const native = window.Spicetify?.Platform?.NativeAPI;
+    if (!native?.setWindowButtonsVisibility) {
+      if (attempt < 120) setTimeout(trackNativeButtons, 500, attempt + 1);
+      return;
+    }
+    const original = native.setWindowButtonsVisibility.bind(native);
+    native.setWindowButtonsVisibility = (visible) => {
+      document.documentElement.classList.toggle("alsw-native-buttons-hidden", !visible);
+      return original(visible);
+    };
+  }
+
+  // The maximize glyph becomes the restore glyph while the window is maximized, and user.css outlines each shape.
+  function trackMaximized() {
+    const update = () =>
+      document.documentElement.classList.toggle(
+        "alsw-maximized",
+        window.outerWidth >= screen.availWidth && window.outerHeight >= screen.availHeight,
+      );
+    update();
+    window.addEventListener("resize", update);
   }
 
   function start() {
+    applyTheme();
     startRulePatching();
     pollSystemTheme();
+    startModeSwitch();
+    trackNativeButtons();
+    trackMaximized();
   }
 
   if (document.readyState === "loading") {
