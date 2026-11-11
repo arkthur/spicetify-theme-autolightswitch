@@ -5,11 +5,12 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint --flag unstable_native_nodejs_ts_config .",
-    "lint:fix": "eslint --fix --flag unstable_native_nodejs_ts_config ."
+    "lint:fix": "eslint --fix --flag unstable_native_nodejs_ts_config .",
+    "checksums": "node scripts/update-checksums.mjs"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "devEngines": {
     "packageManager": {
       "name": "pnpm",

@@ -2,9 +2,7 @@
 // Spotify's embedded Chromium is launched with --force-dark-mode, so prefers-color-scheme
 // can't be used. The process sleeps until the registry value changes (no polling).
 //
-// Build (no SDK needed, uses the .NET Framework compiler that ships with Windows):
-//   %WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe /nologo /target:winexe /optimize ^
-//     /out:SystemThemeWatcher.exe SystemThemeWatcher.cs
+// Build and install with install.bat (no SDK needed, it uses the .NET Framework compiler that ships with Windows).
 //
 // Usage: SystemThemeWatcher.exe [outFile] [registryKeyPath]   (both optional)
 using System;

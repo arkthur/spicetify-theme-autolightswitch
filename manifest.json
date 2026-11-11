@@ -1,0 +1,14 @@
+{
+  "name": "AutoLightSwitch",
+  "description": "Turns Spotify's dark UI into a light one by inverting lightness with native CSS, with a light / system / dark switch in the top bar.",
+  "preview": "theme/preview.png",
+  "readme": "README.md",
+  "usercss": "theme/user.css",
+  "schemes": "theme/color.ini",
+  "include": [
+    "https://arkthur.github.io/spicetify-theme-autolightswitch/theme/theme.js"
+  ],
+  "branch": "main",
+  "authors": [{ "name": "arkthur", "url": "https://github.com/arkthur" }],
+  "tags": ["light", "dark", "auto", "minimal"]
+}

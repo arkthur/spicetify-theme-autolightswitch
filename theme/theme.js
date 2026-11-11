@@ -8,7 +8,7 @@
 //    and every consumer of a wrapped definition inherits the inversion through var(), so use sites need no patch.
 // 2. System theme: Spotify's embedded Chromium always reports prefers-color-scheme: dark, so
 //    the OS theme is read from system-theme.txt ("light" / "dark"), which
-//    SystemThemeWatcher.exe keeps up to date (see SystemThemeWatcher.cs). When that file is
+//    the watcher in watcher/ keeps up to date. When that file is
 //    missing, user.css falls back to the media query.
 // 3. Theme switch: three buttons (light, system, dark) in the top bar, left of the "What's New" bell. Light and
 //    dark are forced, system follows the Windows setting. The choice is kept in localStorage.
@@ -112,7 +112,9 @@
       return;
     }
     seenSheets.add(sheet);
-    walk(rules, !THEME_SHEET_RE.test(sheet.href || ""));
+    // Spicetify Marketplace injects user.css and the color scheme as <style class="marketplaceCSS"> (no href).
+    const isThemeSheet = THEME_SHEET_RE.test(sheet.href || "") || sheet.ownerNode?.classList?.contains("marketplaceCSS");
+    walk(rules, !isThemeSheet);
   }
 
   function watchLink(link) {
