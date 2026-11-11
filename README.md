@@ -72,6 +72,8 @@ Checksums of the files in `watcher/` (also in [SHA256SUMS](watcher/SHA256SUMS)).
 <!-- checksums:end -->
 <!-- prettier-ignore-end -->
 
+**Known false positive:** Microsoft's machine-learning heuristic flags `watcher/system-theme-watcher.sh` as `Trojan:Script/Wacatac.B!ml`, and the other 60 of the 61 engines on VirusTotal report it clean ([report](https://www.virustotal.com/gui/file/fff22f6cc126190f43cbf2dadd1edd3732328e66c1ed007c3df3a8dd465dd272)). The `!ml` suffix marks a machine-learning guess rather than a match with known malware, and the script only reads the OS theme setting and writes `light` or `dark` to a text file. It has been submitted to Microsoft as a false positive. Please read the script (about 70 lines) and compare its checksum before running it.
+
 ## Development
 
 ```sh
