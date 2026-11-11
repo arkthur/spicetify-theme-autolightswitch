@@ -79,7 +79,12 @@ Checksums of the files in `watcher/` (also in [SHA256SUMS](watcher/SHA256SUMS)).
 ```sh
 pnpm install
 pnpm lint
+pnpm lint:css
 ```
+
+The theme itself (`theme/`) is plain CSS and JavaScript and needs no build. Node.js and pnpm are only used for linting and formatting.
+
+Contributor guidance for GitHub Copilot lives in [.github/copilot-instructions.md](.github/copilot-instructions.md).
 
 ## License
 

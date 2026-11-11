@@ -26,13 +26,19 @@
     "(?<!--invert-lightness\\()(?:#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{4}|[0-9a-f]{3})\\b|\\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color|color-mix)\\((?:(?!var\\()[^()])*\\))";
   const COLOR_RE = new RegExp(COLOR_SRC, "gi");
   // url(...) is matched first so that color-looking text inside it (svg#fragment) is left alone.
-  const COLOR_OR_URL_RE = new RegExp(`url\\((?:"[^"]*"|'[^']*'|[^)]*)\\)|${COLOR_SRC}`, "gi");
+  const COLOR_OR_URL_RE = new RegExp(
+    `url\\((?:"[^"]*"|'[^']*'|[^)]*)\\)|${COLOR_SRC}`,
+    "gi"
+  );
   const wrapColors = (value) =>
-    value.replace(COLOR_OR_URL_RE, (match) => (/^url\(/i.test(match) ? match : `${FN}(${match})`));
+    value.replace(COLOR_OR_URL_RE, (match) =>
+      /^url\(/i.test(match) ? match : `${FN}(${match})`
+    );
 
   // The --spice-* palette is rebuilt and inverted by user.css, and --alsw-* are the theme's own switches.
   // Colors containing var() (rgba(var(--spice-rgb-text), .3)) are never matched: they come from the palette.
-  const keepProperty = (name) => name.startsWith("--spice-") || name.startsWith("--alsw-");
+  const keepProperty = (name) =>
+    name.startsWith("--spice-") || name.startsWith("--alsw-");
 
   // Rules scoped to Encore's light theme already hold light colors.
   const LIGHT_SCOPE_RE = /light-theme/;
@@ -73,7 +79,10 @@
       const name = declaration.slice(0, colon).trim();
       if (keepProperty(name)) continue;
       const important = /\s*!important$/i.test(declaration);
-      const value = declaration.slice(colon + 1).replace(/\s*!important$/i, "").trim();
+      const value = declaration
+        .slice(colon + 1)
+        .replace(/\s*!important$/i, "")
+        .trim();
       const next = wrapColors(value);
       if (next === value) continue;
       rule.style.setProperty(name, next, important ? "important" : "");
@@ -91,10 +100,20 @@
         if (rule.cssRules.length) walk(rule.cssRules, scoped);
       } else if (rule instanceof CSSKeyframesRule) {
         if (!wrap) continue;
-        for (const frame of rule.cssRules) wrapHardcodedColors(frame, `@keyframes ${rule.name} ${frame.keyText}`);
-      } else if (typeof CSSNestedDeclarations !== "undefined" && rule instanceof CSSNestedDeclarations) {
+        for (const frame of rule.cssRules)
+          wrapHardcodedColors(
+            frame,
+            `@keyframes ${rule.name} ${frame.keyText}`
+          );
+      } else if (
+        typeof CSSNestedDeclarations !== "undefined" &&
+        rule instanceof CSSNestedDeclarations
+      ) {
         if (wrap) wrapHardcodedColors(rule, "(nested declarations)");
-      } else if (typeof CSSFunctionRule !== "undefined" && rule instanceof CSSFunctionRule) {
+      } else if (
+        typeof CSSFunctionRule !== "undefined" &&
+        rule instanceof CSSFunctionRule
+      ) {
         continue;
       } else if (rule.cssRules) {
         walk(rule.cssRules, wrap);
@@ -113,7 +132,9 @@
     }
     seenSheets.add(sheet);
     // Spicetify Marketplace injects user.css and the color scheme as <style class="marketplaceCSS"> (no href).
-    const isThemeSheet = THEME_SHEET_RE.test(sheet.href || "") || sheet.ownerNode?.classList?.contains("marketplaceCSS");
+    const isThemeSheet =
+      THEME_SHEET_RE.test(sheet.href || "") ||
+      sheet.ownerNode?.classList?.contains("marketplaceCSS");
     walk(rules, !isThemeSheet);
   }
 
@@ -121,7 +142,9 @@
     if (link.sheet) {
       patchSheet(link.sheet);
     } else {
-      link.addEventListener("load", () => patchSheet(link.sheet), { once: true });
+      link.addEventListener("load", () => patchSheet(link.sheet), {
+        once: true
+      });
     }
   }
 
@@ -144,7 +167,11 @@
     startInlineInversion();
 
     // Inspect from DevTools: __autoLightSwitch.stats
-    window.__autoLightSwitch = { stats, patchSheet, setMode: (next) => setMode(next) };
+    window.__autoLightSwitch = {
+      stats,
+      patchSheet,
+      setMode: (next) => setMode(next)
+    };
   }
 
   // React sets colors through inline styles, including custom properties (style={{"--text-subdued": "#FFBDB4"}})
@@ -158,9 +185,11 @@
       if (keepProperty(prop)) continue;
       const value = style.getPropertyValue(prop);
       const next = wrapColors(value);
-      if (next !== value) updates.push([prop, next, style.getPropertyPriority(prop)]);
+      if (next !== value)
+        updates.push([prop, next, style.getPropertyPriority(prop)]);
     }
-    for (const [prop, value, priority] of updates) style.setProperty(prop, value, priority);
+    for (const [prop, value, priority] of updates)
+      style.setProperty(prop, value, priority);
     return updates.length > 0;
   }
 
@@ -189,13 +218,15 @@
       subtree: true,
       childList: true,
       attributes: true,
-      attributeFilter: ["style"],
+      attributeFilter: ["style"]
     });
   }
 
   async function readSystemTheme() {
     try {
-      const response = await fetch(`${THEME_FILE}?t=${Date.now()}`, { cache: "no-store" });
+      const response = await fetch(`${THEME_FILE}?t=${Date.now()}`, {
+        cache: "no-store"
+      });
       if (!response.ok) {
         return null;
       }
@@ -209,12 +240,17 @@
   // Light and dark are forced from the top bar switch; system follows the Windows setting read by readSystemTheme().
   const MODE_KEY = "autolightswitch:mode";
   const MODES = ["light", "system", "dark"];
-  const MODE_LABELS = { light: "Light theme", system: "System theme", dark: "Dark theme" };
+  const MODE_LABELS = {
+    light: "Light theme",
+    system: "System theme",
+    dark: "Dark theme"
+  };
   const MODE_ICONS = {
     light:
       '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>',
-    system: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
-    dark: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+    system:
+      '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+    dark: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'
   };
 
   function loadMode() {
@@ -238,7 +274,9 @@
     const root = document.documentElement;
     root.classList.toggle("alsw-light", theme === "light");
     root.classList.toggle("alsw-dark", theme === "dark");
-    for (const button of document.querySelectorAll(".alsw-mode-switch [data-mode]")) {
+    for (const button of document.querySelectorAll(
+      ".alsw-mode-switch [data-mode]"
+    )) {
       button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
     }
   }
@@ -259,7 +297,10 @@
     clearTimeout(pollTimer);
     systemTheme = await readSystemTheme();
     applyTheme();
-    pollTimer = setTimeout(pollSystemTheme, systemTheme ? POLL_MS : MISSING_POLL_MS);
+    pollTimer = setTimeout(
+      pollSystemTheme,
+      systemTheme ? POLL_MS : MISSING_POLL_MS
+    );
   }
 
   // The switch sits in the top bar, left of the "What's New" bell (the first child of .main-actionButtons). React
@@ -315,7 +356,10 @@
     }
     const original = native.setWindowButtonsVisibility.bind(native);
     native.setWindowButtonsVisibility = (visible) => {
-      document.documentElement.classList.toggle("alsw-native-buttons-hidden", !visible);
+      document.documentElement.classList.toggle(
+        "alsw-native-buttons-hidden",
+        !visible
+      );
       return original(visible);
     };
   }
@@ -325,7 +369,8 @@
     const update = () =>
       document.documentElement.classList.toggle(
         "alsw-maximized",
-        window.outerWidth >= screen.availWidth && window.outerHeight >= screen.availHeight,
+        window.outerWidth >= screen.availWidth &&
+          window.outerHeight >= screen.availHeight
       );
     update();
     window.addEventListener("resize", update);
