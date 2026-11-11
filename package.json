@@ -1,24 +1,12 @@
 {
   "name": "spicetify-theme-autolightswitch",
-  "version": "1.0.0",
-  "description": "",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint --flag unstable_native_nodejs_ts_config .",
     "lint:fix": "eslint --fix --flag unstable_native_nodejs_ts_config .",
     "lint:css": "stylelint \"theme/**/*.css\"",
     "checksums": "node scripts/update-checksums.mjs"
   },
-  "keywords": [],
-  "author": "",
   "license": "MIT",
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "12.18.0",
-      "onFail": "download"
-    }
-  },
   "packageManager": "pnpm@12.18.0",
   "type": "module",
   "devDependencies": {

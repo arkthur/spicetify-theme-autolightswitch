@@ -7,6 +7,7 @@ import { defineConfig, globalIgnores } from 'eslint/config';
 import prettier from 'eslint-config-prettier';
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript';
 import { importX } from 'eslint-plugin-import-x';
+import globals from 'globals';
 import { configs as tsConfigs, plugin as tsPlugin } from 'typescript-eslint';
 
 import type { RuleOptions } from './eslint-typegen.d.ts';
@@ -64,11 +65,8 @@ const importsConfig: ConfigWithExtends = {
     'import-x/newline-after-import': ['error', { considerComments: true }],
 
     'import-x/no-default-export': 'error',
-    'import-x/no-namespace': ['error', { ignore: ['react', 'recharts'] }],
-    'import-x/no-unassigned-import': [
-      'error',
-      { allow: ['**/*.css', '@testing-library/jest-dom/vitest'] }
-    ],
+    'import-x/no-namespace': ['error'],
+    'import-x/no-unassigned-import': ['error'],
     'import-x/no-extraneous-dependencies': [
       'error',
       {
@@ -83,7 +81,7 @@ const importsConfig: ConfigWithExtends = {
     ],
     'import-x/max-dependencies': ['error', { max: 40 }],
 
-    'import-x/no-unresolved': ['error', { ignore: ['globals'] }],
+    'import-x/no-unresolved': ['error'],
     'import-x/order': [
       'error',
       {
@@ -133,8 +131,9 @@ const rootConfig: ConfigWithExtends = {
 };
 
 const jsConfig: ConfigWithExtends = {
-  files: ['*.js'],
-  extends: [js.configs.recommended]
+  files: ['**/*.js'],
+  extends: [js.configs.recommended],
+  languageOptions: { globals: globals.browser }
 };
 
 const config = typegen(

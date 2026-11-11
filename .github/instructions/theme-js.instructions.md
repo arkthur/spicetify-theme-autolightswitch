@@ -6,7 +6,7 @@ applyTo: "theme/theme.js"
 
 # `theme/theme.js`
 
-A single IIFE (`autoLightSwitch`) injected by Spicetify (`inject_theme_js 1`, or the `include` URL in `manifest.json` for Marketplace installs). It runs in Spotify's Chromium, **not** in Node: plain browser JavaScript, no imports, no build, no dependencies. ESLint covers it with `js.configs.recommended` only.
+A single IIFE (`autoLightSwitch`) injected by Spicetify (`inject_theme_js 1`, or the `include` URL in `manifest.json` for Marketplace installs). It runs in Spotify's Chromium, **not** in Node: plain browser JavaScript, no imports, no build, no dependencies. ESLint checks it with `js.configs.recommended` and browser globals (`globals.browser`), which catches typos and undefined names but not runtime behavior. Test it in Spotify. APIs missing from `globals.browser` (very new CSSOM classes) must be guarded with `typeof` like the existing code.
 
 ## Responsibilities
 
